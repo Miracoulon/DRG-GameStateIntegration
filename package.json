@@ -1,0 +1,24 @@
+{
+  "name": "drg-game-state-integration",
+  "version": "0.0.1",
+  "description": "Node.js Game State Integration module for Deep Rock Galactic",
+  "main": "index.js",
+  "author": {
+    "name": "Miracoulon"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.7",
+    "@types/ws": "^8.5.10",
+    "typescript": "^4.0.5"
+  },
+  "dependencies": {
+
+  },
+  "optionalDependencies": {
+    "ws": "^8.16.0"
+  }
+}
