@@ -2,7 +2,7 @@
   "name": "drg-game-state-integration",
   "version": "0.0.1",
   "description": "Node.js Game State Integration module for Deep Rock Galactic",
-  "main": "index.js",
+  "main": "./lib/index.js",
   "author": {
     "name": "Miracoulon"
   },
