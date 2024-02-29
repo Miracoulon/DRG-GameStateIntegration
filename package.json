@@ -1,5 +1,5 @@
 {
-  "name": "drg-game-state-integration",
+  "name": "drg-gsi",
   "version": "0.0.1",
   "description": "Node.js Game State Integration module for Deep Rock Galactic",
   "main": "./lib/index.js",
