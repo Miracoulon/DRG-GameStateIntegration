@@ -12,13 +12,6 @@
   },
   "devDependencies": {
     "@types/node": "^14.14.7",
-    "@types/ws": "^8.5.10",
     "typescript": "^4.0.5"
-  },
-  "dependencies": {
-
-  },
-  "optionalDependencies": {
-    "ws": "^8.16.0"
   }
 }

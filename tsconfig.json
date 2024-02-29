@@ -5,7 +5,8 @@
     "lib": ["es6"],
     "sourceMap": false,
     "outDir": "./lib",
-     "rootDir": "./src"
+    "rootDir": "./src",
+    "declaration":  true
   },
   "exclude": [
     "node_modules"
