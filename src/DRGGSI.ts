@@ -1,6 +1,8 @@
 import EventEmitter = require("events");
 import { DRGGSIMission } from "./DRGGSIMission";
 import { DRGGSIPlayer } from "./Player/DRGGSIPlayer";
+import { DRGGSISession } from "./Session/DRGGSISession";
+import { DRGGSISupplyPod } from "./SupplyPod/DRGGSISupplyPod";
 
 /**
  * A MessageHandler used to process a message with a given type.
@@ -95,6 +97,22 @@ class DRGGSI extends EventEmitter {
     private _mission: DRGGSIMission;
     public get Mission(): DRGGSIMission { if (this._mission === null) this._mission = new DRGGSIMission(); return this._mission; };
 
+    private _supplyPods: Map<number, DRGGSISupplyPod>;
+    /** A map of number (ID) <-> DRGGSISupplyPod of all currently tracked SupplyPods */
+    public get SupplyPods(): Map<number, DRGGSISupplyPod> { if (this._supplyPods === null) this._supplyPods = new Map<number, DRGGSISupplyPod>(); return this._supplyPods; };
+    /**
+     * Tries to find and return a SupplyPod by its ID
+     * @param {number} id The SupplyPod ID to look for
+     * @returns {DRGGSISupplyPod | null} The SupplyPod if found, null otherwise
+     */
+    public getSupplyPodByID(id: number): DRGGSISupplyPod | null {
+        if (!this._supplyPods.has(id)) return null;
+        return this._supplyPods.get(id);
+    }
+
+    private _session: DRGGSISession;
+    public get Session(): DRGGSISession { return this._session; };
+
 
     constructor(options: DRGGSIOptions) {
         super();
@@ -104,6 +122,8 @@ class DRGGSI extends EventEmitter {
 
         this._players = new Map<number, DRGGSIPlayer>();
         if (this._mission === null) this._mission = new DRGGSIMission();
+        if (this._supplyPods === null) this._supplyPods = new Map<number, DRGGSISupplyPod>();
+        this._session = new DRGGSISession();
 
         if (this._options.UseDefaultHandlers) this.addDefaultMessageHandlers();
     }
@@ -145,10 +165,11 @@ class DRGGSI extends EventEmitter {
         if (!this.checkAuth(raw.Token.Name, raw.Token.Value)) return false;
         this.emit('raw', raw);
         if (!raw.Type) return false;
+        if (!raw.Data) return false;
         if (!this._messageHandlers.has(raw.Type)) return false;
         try {
             const messageHandler = this._messageHandlers.get(raw.Type);
-            return messageHandler(raw);
+            return messageHandler(raw.Data);
         }
         catch (e) {
             this.emit('error', `Failed to handle message: "${e.message}"`);
@@ -310,6 +331,8 @@ class DRGGSI extends EventEmitter {
 
         this.addMessageHandler('Mission.Time', this.Mission.handleMissionTime);
         this.addMessageHandler('Mission.Info', this.Mission.handleMissionInfo);
+
+        this.addMessageHandler('Session.Info.Changed', this.Session.handleInfoChanged);
     }
 }
 

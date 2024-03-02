@@ -1,4 +1,5 @@
 import EventEmitter = require("events");
+import { DRGGSIItem } from "../Items/DRGGSIItem";
 import { EPlayerState } from "./EPlayerState";
 
 
@@ -66,7 +67,7 @@ class DRGGSIPlayer extends EventEmitter {
     /** Whether this player is the host of the lobby. */
     public get IsLobbyHost(): boolean { return this._isHost; };
 
-    private _inventory: Map<string, number>;
+    private _inventory: Map<string, number> = null;
     /** A map of resource name <-> resource amount of all resources currently carried by this player */
     public get Inventory(): Map<string, number> { if (this._inventory === null) this._inventory = new Map<string, number>(); return this._inventory; };
 
@@ -99,6 +100,18 @@ class DRGGSIPlayer extends EventEmitter {
         this.emit('Player.State', this, this._state, previousState);
     }
     public get State(): EPlayerState { return this._state; };
+
+    private _equipment: Map<string, DRGGSIItem> = null;
+    /** A map of string <-> DRGGSIItem of all items currently available to this player */
+    public get Equipment(): Map<string, DRGGSIItem> { if (this._equipment === null) this._equipment = new Map<string, DRGGSIItem>(); return this._equipment; };
+    private _equipmentSlots: Map<number, string> = null;
+    /** A map of number (item slot) <-> string (item savegame ID) of all items currently available to this player */
+    public get EquipmentSlots(): Map<number, string> { if (this._equipmentSlots === null) this._equipmentSlots = new Map<number, string>(); return this._equipmentSlots; };
+    private _equippedItem: string;
+    /** The item that this player is currently holding. null if no item is found */
+    public get EquippedItem(): DRGGSIItem | null { if (this.Equipment.has(this._equippedItem)) return this.Equipment.get(this._equippedItem); return null; };
+    /** The SavegameID of the item that this player is currently holding */
+    public get EquippedItemID(): string { return this._equippedItem; };
     
 
     constructor(playerID: number, playerName: string, isLocal: boolean, isHost: boolean) {
@@ -110,6 +123,9 @@ class DRGGSIPlayer extends EventEmitter {
         this._isHost = isHost;
 
         this._inventory = new Map<string, number>();
+        this._equipment = new Map<string, DRGGSIItem>();
+        this._equipmentSlots = new Map<number, string>();
+        this._equippedItem = '';
 
         this._state = EPlayerState.Invalid;
     }
