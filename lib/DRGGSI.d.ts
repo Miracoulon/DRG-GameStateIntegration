@@ -133,6 +133,7 @@ declare class DRGGSI extends EventEmitter {
      * @returns True if a MessageHandler was removed, otherwise false.
      */
     removeMessageHandler(messageType: string): boolean;
+    getHelperPath(helperFile: string): string;
     /**
      * Checks whether a token with TokenName:TokenValue exists.
      * @param tokenName The name of the token to check for.

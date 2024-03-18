@@ -4,6 +4,7 @@ import { DRGGSIPlayer } from "./Team/Player/DRGGSIPlayer";
 import { DRGGSISession } from "./Session/DRGGSISession";
 import { DRGGSISupplyPod } from "./Mission/SupplyPod/DRGGSISupplyPod";
 import { DRGGSITeam } from "./Team/DRGGSITeam";
+import path = require("path");
 
 /**
  * A MessageHandler used to process a message with a given type.
@@ -235,6 +236,13 @@ class DRGGSI extends EventEmitter {
         if (!this._messageHandlers.has(messageType)) return false;
         this._messageHandlers.delete(messageType);
         return true;
+    }
+
+    public getHelperPath(helperFile: string): string {
+        if (helperFile.endsWith('.js')) {
+            return path.join(__dirname, 'ModHelper', 'Scripts', helperFile);
+        }
+        return path.join(__dirname, 'ModHelper', helperFile + (helperFile.endsWith('.html') ? '' :'.hmtl'));
     }
 
     /**
