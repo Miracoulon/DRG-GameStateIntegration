@@ -1,6 +1,7 @@
 import EventEmitter = require("events");
-import { DRGGSIItem } from "../Items/DRGGSIItem";
+import { DRGGSIItem } from "./Items/DRGGSIItem";
 import { EPlayerState } from "./EPlayerState";
+import { DRGGSIResourceInventory } from "../../ResourceInventory/DRGGSIResourceInventory";
 
 
 interface DRGGSIPlayerEvents {
@@ -10,30 +11,30 @@ interface DRGGSIPlayerEvents {
      * @param player The player whose name just changed.
      * @param name The name of this player.
      */
-    'Player.NameChanged': (player: DRGGSIPlayer, name: string) => void;
+    'NameChanged': (player: DRGGSIPlayer, name: string) => void;
     /**
      * Emitted when the state of this player changes.
      * @param player The player whose state just changed.
      * @param state The new state of this player.
      * @param previousState The previous state of this player
      */
-    'Player.State': (player: DRGGSIPlayer, state: EPlayerState, previousState: EPlayerState) => void;
+    'State': (player: DRGGSIPlayer, state: EPlayerState, previousState: EPlayerState) => void;
 
     /**
      * Emitted when the players health changes.
      * @param player The player whose health just changed.
      * @param health The new health of the player.
      */
-    'Player.Health': (player: DRGGSIPlayer, health: number) => void;
+    'Health': (player: DRGGSIPlayer, health: number) => void;
     /**
      * Emitted when the players shield changes.
      * @param player The player whose shield just changed.
      * @param shield The new shield of the player.
      */
-    'Player.Shield': (player: DRGGSIPlayer, shield: number) => void;
-    'Player.SupplyStatusChanged': (player: DRGGSIPlayer, health: number, ammo: number) => void;
-    'Player.Inventory.Changed': (player: DRGGSIPlayer, resource: string, newAmount: number) => void;
-    'Player.Inventory.Snapshot': (player: DRGGSIPlayer, resources: Map<string, number>) => void;
+    'Shield': (player: DRGGSIPlayer, shield: number) => void;
+    'SupplyStatusChanged': (player: DRGGSIPlayer, health: number, ammo: number) => void;
+    'Inventory.Changed': (player: DRGGSIPlayer, resource: string, newAmount: number) => void;
+    'Inventory.Snapshot': (player: DRGGSIPlayer, resources: DRGGSIResourceInventory) => void;
 }
 
 declare interface DRGGSIPlayer {
@@ -54,7 +55,7 @@ class DRGGSIPlayer extends EventEmitter {
     private _playerName: string;
     private set PlayerName(newName: string) {
         this._playerName = newName;
-        this.emit('Player.NameChanged', this, this._playerName);
+        this.emit('NameChanged', this, this._playerName);
     };
     /** The name of this player. */
     public get PlayerName(): string { return this._playerName; };
@@ -67,15 +68,17 @@ class DRGGSIPlayer extends EventEmitter {
     /** Whether this player is the host of the lobby. */
     public get IsLobbyHost(): boolean { return this._isHost; };
 
-    private _inventory: Map<string, number> = null;
+    private _inventory: DRGGSIResourceInventory;
+    public get Inventory(): DRGGSIResourceInventory { return this._inventory; };
+    //private _inventory: Map<string, number> = null;
     /** A map of resource name <-> resource amount of all resources currently carried by this player */
-    public get Inventory(): Map<string, number> { if (this._inventory === null) this._inventory = new Map<string, number>(); return this._inventory; };
+    //public get Inventory(): Map<string, number> { if (this._inventory === null) this._inventory = new Map<string, number>(); return this._inventory; };
 
 
     private _health: number;
     private set Health(newHealth: number) {
         this._health = newHealth < 0 ? 0 : newHealth;
-        this.emit('Player.Health', this, this._health);
+        this.emit('Health', this, this._health);
     };
     public get Health(): number { return this._health; };
     private _maxHealth: number;
@@ -85,7 +88,7 @@ class DRGGSIPlayer extends EventEmitter {
     private _shield: number;
     private set Shield(newShield: number) {
         this._shield = newShield < 0 ? 0 : newShield;
-        this.emit('Player.Shield', this, this._shield);
+        this.emit('Shield', this, this._shield);
     };
     public get Shield(): number { return this._shield; };
     private _maxShield: number;
@@ -97,7 +100,7 @@ class DRGGSIPlayer extends EventEmitter {
         if (this._state === newState) return;
         const previousState = this._state;
         this._state = newState;
-        this.emit('Player.State', this, this._state, previousState);
+        this.emit('State', this, this._state, previousState);
     }
     public get State(): EPlayerState { return this._state; };
 
@@ -122,7 +125,8 @@ class DRGGSIPlayer extends EventEmitter {
         this._isLocal = isLocal;
         this._isHost = isHost;
 
-        this._inventory = new Map<string, number>();
+        this._inventory = new DRGGSIResourceInventory();
+        //this._inventory = new Map<string, number>();
         this._equipment = new Map<string, DRGGSIItem>();
         this._equipmentSlots = new Map<number, string>();
         this._equippedItem = '';
@@ -151,8 +155,9 @@ class DRGGSIPlayer extends EventEmitter {
 
     public handleInventoryChanged(data): boolean {
         if (data.Resource === undefined || data.Amount === undefined) return false;
-        this._inventory.set(data.Resource, data.Amount);
-        this.emit('Player.Inventory.Changed', this, data.Resource, data.Amount);
+        //this._inventory.set(data.Resource, data.Amount);
+        this._inventory.setResourceAmount(data.Resource, data.Amount);
+        this.emit('Inventory.Changed', this, data.Resource, data.Amount);
         return true;
     }
 
@@ -160,9 +165,10 @@ class DRGGSIPlayer extends EventEmitter {
         if (data.Resources === undefined) return false;
         for (const resourceInfo of data.Resources) {
             if (resourceInfo.Resource === undefined || resourceInfo.Amount === undefined) continue;
-            this._inventory.set(resourceInfo.Resource, resourceInfo.Amount);
+            //this._inventory.set(resourceInfo.Resource, resourceInfo.Amount);
+            this._inventory.setResourceAmount(resourceInfo.Resource, resourceInfo.Amount);
         }
-        this.emit('Player.Inventory.Snapshot', this, this._inventory);
+        this.emit('Inventory.Snapshot', this, this._inventory);
         return true;
     }
 

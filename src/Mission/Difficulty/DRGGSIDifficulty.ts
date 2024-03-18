@@ -1,5 +1,5 @@
 import EventEmitter = require("events");
-import { RandInterval, RandRange } from "../RandInterval";
+import { RandInterval, RandRange } from "../../Utility/RandInterval";
 
 interface DRGGSIDifficultyEvents {
     /** Emitted when the difficulty gets updated */

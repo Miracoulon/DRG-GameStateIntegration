@@ -1,8 +1,9 @@
 import EventEmitter = require("events");
-import { DRGGSIMission } from "./DRGGSIMission";
-import { DRGGSIPlayer } from "./Player/DRGGSIPlayer";
+import { DRGGSIMission } from "./Mission/DRGGSIMission";
+import { DRGGSIPlayer } from "./Team/Player/DRGGSIPlayer";
 import { DRGGSISession } from "./Session/DRGGSISession";
-import { DRGGSISupplyPod } from "./SupplyPod/DRGGSISupplyPod";
+import { DRGGSISupplyPod } from "./Mission/SupplyPod/DRGGSISupplyPod";
+import { DRGGSITeam } from "./Team/DRGGSITeam";
 
 /**
  * A MessageHandler used to process a message with a given type.
@@ -63,19 +64,11 @@ interface DRGGSIEvents {
     'GSI.Provider': (providerName: string, providerID: string, providerVersion: string, providerSteamID: string) => void;
 
     /**
-     * Emitted when a new player joins.
-     * @param playerID The ID assigned to the player by the GSI module. Persistent for the duration they are in the game. May change on reconnect.
-     * @param player The player that joined.
+     * Emitted each time a new level loads.
+     * @param levelName The name of the level.
+     * @param IsOnSpacerig Whether this level is the Spacerig.
      */
-    'Player.Join': (playerID: number, player: DRGGSIPlayer) => void;
-
-    /**
-     * Emitted when a player leaves the game.
-     * May be called without a previous 'Player.Join' event in the case that they disconnect before spawning.
-     * @param playerID The ID assigned to the player by the GSI module.
-     * @param player The player that left the game.
-     */
-    'Player.Leave': (playerID: number, player: DRGGSIPlayer) => void;
+    'GSI.LevelTransition': (levelName: string, IsOnSpacerig: boolean) => void;
 }
 
 declare interface DRGGSI {
@@ -93,22 +86,17 @@ class DRGGSI extends EventEmitter {
     private _messageHandlers: Map<string, DRGGSIMessageHandler>;
 
 
+    private _team: DRGGSITeam;
+    public get Team(): DRGGSITeam { return this._team; };
+
     private _players: Map<number, DRGGSIPlayer>;
     private _mission: DRGGSIMission;
     public get Mission(): DRGGSIMission { if (this._mission === null) this._mission = new DRGGSIMission(); return this._mission; };
 
-    private _supplyPods: Map<number, DRGGSISupplyPod>;
-    /** A map of number (ID) <-> DRGGSISupplyPod of all currently tracked SupplyPods */
-    public get SupplyPods(): Map<number, DRGGSISupplyPod> { if (this._supplyPods === null) this._supplyPods = new Map<number, DRGGSISupplyPod>(); return this._supplyPods; };
-    /**
-     * Tries to find and return a SupplyPod by its ID
-     * @param {number} id The SupplyPod ID to look for
-     * @returns {DRGGSISupplyPod | null} The SupplyPod if found, null otherwise
-     */
-    public getSupplyPodByID(id: number): DRGGSISupplyPod | null {
-        if (!this._supplyPods.has(id)) return null;
-        return this._supplyPods.get(id);
-    }
+    /** Whether the lobby is currently on the Spacerig.
+     * Does not update during loading screens. */
+    private _isOnSpacerig: boolean;
+    public get IsOnSpacerig(): boolean { return this._isOnSpacerig; };
 
     private _session: DRGGSISession;
     public get Session(): DRGGSISession { return this._session; };
@@ -120,9 +108,10 @@ class DRGGSI extends EventEmitter {
         this._messageHandlers = options.MessageHandlers || new Map<string, DRGGSIMessageHandler>();
         this._options.UseDefaultHandlers = (options.UseDefaultHandlers === undefined || options.UseDefaultHandlers === null);
 
+        this._team = new DRGGSITeam();
+
         this._players = new Map<number, DRGGSIPlayer>();
         if (this._mission === null) this._mission = new DRGGSIMission();
-        if (this._supplyPods === null) this._supplyPods = new Map<number, DRGGSISupplyPod>();
         this._session = new DRGGSISession();
 
         if (this._options.UseDefaultHandlers) this.addDefaultMessageHandlers();
@@ -275,62 +264,70 @@ class DRGGSI extends EventEmitter {
             return true;
         });
 
-
-        this.addMessageHandler('Player.Join', (data) => {
-            if (data.ID === undefined || data.PlayerName === undefined || data.IsLocal === undefined || data.IsHost === undefined) return false;
-            if (this._players.has(data.ID)) return true;
-            const player = new DRGGSIPlayer(data.ID, data.PlayerName, data.IsLocal, data.IsHost);
-            this._players.set(data.ID, player);
-            this.emit('Player.Join', data.ID, player);
+        this.addMessageHandler('GSI.LevelTransition', (data) => {
+            if (data.Level === undefined || data.IsOnSpacerig === undefined) return false;
+            this._isOnSpacerig = data.IsOnSpacerig;
+            if (this._isOnSpacerig) {
+                this._mission.reset();
+            } else {
+                
+            }
+            this._team.reset();
+            this.emit('GSI.LevelTransition', data.Level, data.IsOnSpacerig);
             return true;
         });
 
-        this.addMessageHandler('Player.Leave', (data) => {
-            if (!this._players.has(data.ID)) return true;
-            const player = this._players.get(data.ID);
-            this.emit('Player.Leave', data.ID, player);
-            this._players.delete(data.ID);
-            return true;
-        })
+
+        this.addMessageHandler('Player.Join', this._team.handlePlayerJoin);
+        this.addMessageHandler('Player.Leave', this._team.handlePlayerLeave);
 
         this.addMessageHandler('Player.ClassChanged', (data) => {
-            const player = this.getPlayerByID(data.ID);
+            const player = this._team.getPlayerByID(data.ID);
             if (player) return player.handleClassChange(data);
             return false;
         });
 
         this.addMessageHandler('Player.HealthInfo', (data) => {
-            const player = this.getPlayerByID(data.ID);
+            const player = this._team.getPlayerByID(data.ID);
             if (player) return player.handleHealthInfo(data);
             return false;
         });
 
         this.addMessageHandler('Player.State', (data) => {
-            const player = this.getPlayerByID(data.ID);
+            const player = this._team.getPlayerByID(data.ID);
             if (player) return player.handlePlayerState(data);
             return false;
         })
 
         this.addMessageHandler('Player.Inventory.Changed', (data) => {
-            const player = this.getPlayerByID(data.ID);
+            const player = this._team.getPlayerByID(data.ID);
             if (player) return player.handleInventoryChanged(data);
             return false;
         });
 
         this.addMessageHandler('Player.Iventory.Snapshot', (data) => {
-            const player = this.getPlayerByID(data.ID);
+            const player = this._team.getPlayerByID(data.ID);
             if (player) return player.handleInventorySnapshot(data);
             return false;
         });
 
         this.addMessageHandler('Player.SupplyStatusChanged', (data) => {
-            const player = this.getPlayerByID(data.ID);
+            const player = this._team.getPlayerByID(data.ID);
             if (player) return player.handleSupplyStatusChanged(data);
             return false;
         });
 
         this.addMessageHandler('Mission.Time', this.Mission.handleMissionTime);
         this.addMessageHandler('Mission.Info', this.Mission.handleMissionInfo);
+
+        this.addMessageHandler('Droppod.StateChanged', (data) => {
+            if (this._isOnSpacerig) { return false; }
+            else { return this._mission.handleDropPodInfo(data); }
+        });
+
+        this.addMessageHandler('SupplyPod.Charges.Changed', this.Mission.handleSupplyPodCharges);
+        this.addMessageHandler('SupplyPod.State.Changed', this.Mission.handleSupplyPodStateChanged);
+        this.addMessageHandler('SupplyPod.Ordered', this.Mission.handleSupplyPodOrdered);
 
         this.addMessageHandler('Session.Info.Changed', this.Session.handleInfoChanged);
     }

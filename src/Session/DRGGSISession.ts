@@ -3,7 +3,7 @@ import { ESessionVisibility } from "./ESessionVisibility";
 
 interface DRGGSISessionEvents {
     /** Emitted when the session settings get updated */
-    'Session.Info.Changed': () => void;
+    'Info.Changed': () => void;
 }
 
 declare interface DRGGSISession {
@@ -66,7 +66,7 @@ class DRGGSISession extends EventEmitter {
         this._serverName = data.Name || 'Unknown';
         this._isPassworded = data.Passworded;
 
-        this.emit('Session.Info.Changed');
+        this.emit('Info.Changed');
         return true;
     }
 }

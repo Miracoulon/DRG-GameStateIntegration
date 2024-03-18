@@ -1,4 +1,6 @@
 import EventEmitter = require("events");
+import { DRGGSIDropPod } from "./DropPod/DRGGSIDropPod";
+import { DRGGSISupplyPod } from "./SupplyPod/DRGGSISupplyPod";
 
 interface DRGGSIMissionEvents {
     /**
@@ -6,13 +8,27 @@ interface DRGGSIMissionEvents {
      * Happens on mission selection and mission level loading.
      * @param info This mission.
      */
-    'Mission.Info': (info: DRGGSIMission) => void;
+    'Info': (info: DRGGSIMission) => void;
 
     /**
      * Emitted when the mission time updates.
      * @param seconds The time in seconds spent in the current mission.
      */
-    'Mission.Time': (seconds: number) => void;
+    'Time': (seconds: number) => void;
+
+    /**
+     * Emitted whenever a DropPod spawns
+     * @param pod The DropPod that just spawned
+     */
+    'DropPod.Spawned': (pod: DRGGSIDropPod) => void;
+
+    /**
+     * Emitted whenever a SupplyPod is ordered
+     * @param X Beacon X coordinate
+     * @param Y Beacon Y coordinate
+     * @param Z Beacon Z coordinate
+     */
+    'SupplyPod.Ordered': (X: number, Y: number, Z: number) => void;
 }
 
 declare interface DRGGSIMission {
@@ -77,6 +93,26 @@ class DRGGSIMission extends EventEmitter {
      * */
     public get MissionTimeSeconds(): number { return this._missionTime; };
 
+
+    private _supplyPods: Map<number, DRGGSISupplyPod>;
+    /** A map of number (ID) <-> DRGGSISupplyPod of all currently tracked SupplyPods */
+    public get SupplyPods(): Map<number, DRGGSISupplyPod> { if (this._supplyPods === null) this._supplyPods = new Map<number, DRGGSISupplyPod>(); return this._supplyPods; };
+    /**
+     * Tries to find and return a SupplyPod by its ID
+     * @param {number} id The SupplyPod ID to look for
+     * @returns {DRGGSISupplyPod | null} The SupplyPod if found, null otherwise
+     */
+    public getSupplyPodByID(id: number): DRGGSISupplyPod | null {
+        if (!this._supplyPods.has(id)) return null;
+        return this._supplyPods.get(id);
+    }
+
+
+    private _landingPod: DRGGSIDropPod;
+    public get LandingPod(): DRGGSIDropPod | null { return this._landingPod; };
+    private _escapePod: DRGGSIDropPod;
+    public get EscapePod(): DRGGSIDropPod | null { return this._escapePod; };
+
     public constructor() {
         super();
 
@@ -99,10 +135,20 @@ class DRGGSIMission extends EventEmitter {
         this._missionTime = -1;
     }
 
+    public reset() {
+        this._missionTime = -1;
+        this._supplyPods = new Map<number, DRGGSISupplyPod>();
+
+        this._landingPod = null;
+        this._escapePod = null;
+
+        this.emit('Time', this._missionTime);
+    }
+
     public handleMissionTime(data): boolean {
         if (data.Time === undefined) return false;
         this._missionTime = data.Time;
-        this.emit('Mission.Time', this._missionTime);
+        this.emit('Time', this._missionTime);
         return true;
     }
 
@@ -124,7 +170,63 @@ class DRGGSIMission extends EventEmitter {
         for (const warning of data.Warnings) {
             this._warnings.push(warning);
         }
-        this.emit('Mission.Info', this);
+        this.emit('Info', this);
+        return true;
+    }
+
+    public handleDropPodInfo(data): boolean {
+        if (data.Type === undefined || data.State === undefined) return false;
+        switch (data.Type) {
+            case 0: {
+                return false;
+            }
+            case 1: {
+                if (this._landingPod === null) {
+                    this._landingPod = new DRGGSIDropPod();
+                    this.emit('DropPod.Spawned', this._landingPod);
+                }
+                this._landingPod.handleStateInfo(data.State);
+                break;
+            }
+            case 2: {
+                if (this._escapePod === null) {
+                    this._escapePod = new DRGGSIDropPod();
+                    this.emit('DropPod.Spawned', this._escapePod);
+                }
+                this._escapePod.handleStateInfo(data.State);
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public handleSupplyPodOrdered(data): boolean {
+        if (data.X === undefined || data.Y === undefined || data.Z === undefined) return false;
+        this.emit('SupplyPod.Ordered', data.X, data.Y, data.Z);
+    }
+
+    public handleSupplyPodStateChanged(data): boolean {
+        if (data.ID === undefined || data.State === undefined) return false;
+        let pod = this.getSupplyPodByID(data.ID);
+        if (!pod) {
+            pod = new DRGGSISupplyPod(data.ID);
+            this._supplyPods.set(data.ID, pod);
+        }
+        pod.handleStateChanged(data);
+        return true;
+    }
+
+    public handleSupplyPodCharges(data): boolean {
+        if (data.ID === undefined || data.Charges === undefined) return false;
+        let pod = this.getSupplyPodByID(data.ID);
+        if (!pod) {
+            pod = new DRGGSISupplyPod(data.ID);
+            this._supplyPods.set(data.ID, pod);
+        }
+        pod.handleChargesLeftChanged(data);
         return true;
     }
 }

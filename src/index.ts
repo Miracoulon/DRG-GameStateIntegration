@@ -1,12 +1,12 @@
 export { DRGGSI, DRGGSIOptions } from './DRGGSI';
 
-export { DRGGSIMission } from './DRGGSIMission';
+export { DRGGSIMission } from './Mission/DRGGSIMission';
 
-export { DRGGSIPlayer } from './Player/DRGGSIPlayer';
-export { EPlayerState } from './Player/EPlayerState';
+export { DRGGSIPlayer } from './Team/Player/DRGGSIPlayer';
+export { EPlayerState } from './Team/Player/EPlayerState';
 
-export { DRGGSISupplyPod } from './SupplyPod/DRGGSISupplyPod';
-export { ESupplyPodState } from './SupplyPod/ESupplyPodState';
+export { DRGGSISupplyPod } from './Mission/SupplyPod/DRGGSISupplyPod';
+export { ESupplyPodState } from './Mission/SupplyPod/ESupplyPodState';
 
 export { DRGGSISession } from './Session/DRGGSISession';
 export { ESessionVisibility } from './Session/ESessionVisibility';

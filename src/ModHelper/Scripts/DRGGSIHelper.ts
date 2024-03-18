@@ -63,8 +63,11 @@ function sendDirect(socketID: string, messageType: string, message: string | obj
 
             data.Data = message;
         }
+        else if (typeof (message) === 'string') {
+            data.Data = JSON.parse(message);
+        }
         else {
-            data.Data = message;
+            writeError(`DRGGSI: Message must be either string or object`, socketID);
         }
         const result = JSON.stringify(data);
         if (!socket.send(result)) {
@@ -87,7 +90,6 @@ function sendMulti(socketIDs: Array<string>, messageType: string, message: strin
         writeError('DRGGSI: SocketIDs must be set to send data', null);
         return;
     }
-
     if (!message) return;
     try {
         const data = {
@@ -101,13 +103,14 @@ function sendMulti(socketIDs: Array<string>, messageType: string, message: strin
         data.Type = messageType || 'GSI.Generic';
         
         if (typeof (message) === 'object') {
-
             data.Data = message;
+        }
+        else if (typeof (message) === 'string') {
+            data.Data = JSON.parse(message);
         }
         else {
-            data.Data = message;
+            writeError(`DRGGSI: Message must be either string or object`, null);
         }
-        
         for (const socketID of socketIDs) {
             if (!sockets.has(socketID)) {
                 writeError(`DRGGSI: "${socketID}" is not an active socket`, socketID);
