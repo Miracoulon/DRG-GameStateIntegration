@@ -1,7 +1,9 @@
 /// <reference types="node" />
 import EventEmitter = require("events");
-import { DRGGSIMission } from "./DRGGSIMission";
-import { DRGGSIPlayer } from "./Player/DRGGSIPlayer";
+import { DRGGSIMission } from "./Mission/DRGGSIMission";
+import { DRGGSIPlayer } from "./Team/Player/DRGGSIPlayer";
+import { DRGGSISession } from "./Session/DRGGSISession";
+import { DRGGSITeam } from "./Team/DRGGSITeam";
 /**
  * A MessageHandler used to process a message with a given type.
  * Should return true if the message was processed successfully, otherwise false.
@@ -55,18 +57,11 @@ interface DRGGSIEvents {
      */
     'GSI.Provider': (providerName: string, providerID: string, providerVersion: string, providerSteamID: string) => void;
     /**
-     * Emitted when a new player joins.
-     * @param playerID The ID assigned to the player by the GSI module. Persistent for the duration they are in the game. May change on reconnect.
-     * @param player The player that joined.
+     * Emitted each time a new level loads.
+     * @param levelName The name of the level.
+     * @param IsOnSpacerig Whether this level is the Spacerig.
      */
-    'Player.Join': (playerID: number, player: DRGGSIPlayer) => void;
-    /**
-     * Emitted when a player leaves the game.
-     * May be called without a previous 'Player.Join' event in the case that they disconnect before spawning.
-     * @param playerID The ID assigned to the player by the GSI module.
-     * @param player The player that left the game.
-     */
-    'Player.Leave': (playerID: number, player: DRGGSIPlayer) => void;
+    'GSI.LevelTransition': (levelName: string, IsOnSpacerig: boolean) => void;
 }
 declare interface DRGGSI {
     on<U extends keyof DRGGSIEvents>(event: U, listener: DRGGSIEvents[U]): this;
@@ -78,9 +73,17 @@ declare interface DRGGSI {
 declare class DRGGSI extends EventEmitter {
     private _options;
     private _messageHandlers;
+    private _team;
+    get Team(): DRGGSITeam;
     private _players;
     private _mission;
     get Mission(): DRGGSIMission;
+    /** Whether the lobby is currently on the Spacerig.
+     * Does not update during loading screens. */
+    private _isOnSpacerig;
+    get IsOnSpacerig(): boolean;
+    private _session;
+    get Session(): DRGGSISession;
     constructor(options: DRGGSIOptions);
     /**
      * Attempts to process the given data object as a DRG-GSI message.
