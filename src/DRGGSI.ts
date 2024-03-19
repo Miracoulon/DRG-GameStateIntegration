@@ -107,12 +107,12 @@ class DRGGSI extends EventEmitter {
         super();
         this._options.Tokens = options.Tokens || '';
         this._messageHandlers = options.MessageHandlers || new Map<string, DRGGSIMessageHandler>();
-        this._options.UseDefaultHandlers = (options.UseDefaultHandlers === undefined || options.UseDefaultHandlers === null);
+        this._options.UseDefaultHandlers = (options.UseDefaultHandlers === undefined || options.UseDefaultHandlers === null || options.UseDefaultHandlers);
 
         this._team = new DRGGSITeam();
 
         this._players = new Map<number, DRGGSIPlayer>();
-        if (this._mission === null) this._mission = new DRGGSIMission();
+        this._mission = new DRGGSIMission();
         this._session = new DRGGSISession();
 
         if (this._options.UseDefaultHandlers) this.addDefaultMessageHandlers();
@@ -148,15 +148,15 @@ class DRGGSI extends EventEmitter {
             raw = data;
         }
 
-        if (!raw) return false;
-        if (!raw.Token) return false;
-        if (!raw.Token.Name) return false;
-        if (!raw.Token.Value) return false;
-        if (!this.checkAuth(raw.Token.Name, raw.Token.Value)) return false;
+        if (!raw) throw new TypeError('Raw data was null or undefined');
+        if (!raw.Token) throw new SyntaxError('Data had no Token');
+        if (!raw.Token.Name === undefined) throw new SyntaxError('Token Name is missing');
+        if (!raw.Token.Value === undefined) throw new SyntaxError('Token Value is missing');
+        if (!this.checkAuth(raw.Token.Name, raw.Token.Value)) { this.emit('info', 'Invalid auth'); return false; };
         this.emit('raw', raw);
-        if (!raw.Type) return false;
-        if (!raw.Data) return false;
-        if (!this._messageHandlers.has(raw.Type)) return false;
+        if (!raw.Type) throw new SyntaxError('Data had no assigned type');
+        if (!raw.Data) throw new SyntaxError('Data was empty');
+        if (!this._messageHandlers.has(raw.Type)) { this.emit('info', `No message handler for "${raw.Type}"`); return false; };
         try {
             const messageHandler = this._messageHandlers.get(raw.Type);
             return messageHandler(raw.Data);

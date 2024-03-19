@@ -142,17 +142,17 @@ function handleSocketOpen(socketID: string) {
 }
 
 function handleSocketMessage(socketID: string, message) {
-    if (!message) {
+    if (!message || !message.data) {
         writeError(`DRGGSI: Received empty message "${socketID}"`, socketID);
         return;
     }
 
     let parsed = null;
     try {
-        parsed = JSON.parse(message);
+        parsed = JSON.parse(message.data);
     }
     catch (e) {
-        writeError(`DRGGSI: Failed parsing message: "${e.message}"`, socketID);
+        writeError(`DRGGSI: Failed parsing message: "${e.message.data}"`, socketID);
         return;
     }
 
@@ -184,7 +184,7 @@ function handleSocketClose(socketID: string, closeEvent) {
  * @param {string} tokenValue The value of the auth token.
  * @param {string} URI The URI to connect to.
  */
-function connect(socketID: string, tokenName: string, tokenValue: string, URI: string = 'ws://localhost:7664',) {
+function connect(socketID: string, tokenName: string, tokenValue: string, URI: string = 'ws://localhost:7664') {
     let socket: DRGGSISocket = null;
     if (sockets.has(socketID)) {
         socket = sockets.get(socketID);
@@ -193,6 +193,8 @@ function connect(socketID: string, tokenName: string, tokenValue: string, URI: s
     }
 
     socket = new DRGGSISocket(socketID, tokenName, tokenValue, handleSocketOpen, handleSocketMessage, handleSocketError, handleSocketClose);
+    sockets.set(socketID, socket);
+    socket.connect(URI);
 }
 
 /**
