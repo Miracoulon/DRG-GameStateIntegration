@@ -18,6 +18,117 @@ interface DRGGSIPlayerEvents {
      * @param previousState The previous state of this player
      */
     'State': (player: DRGGSIPlayer, state: EPlayerState, previousState: EPlayerState) => void;
+    /** ==== SPECIAL STATE EVENTS ==== */
+    /**
+     * Emitted when this player dies.
+     * @param player The player that just died
+     */
+    'State.OnDeath': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player was revived.
+     * @param player The player that just got revived
+     */
+    'State.OnRevived': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player gets paralyzed (example: Grabbed by a leech)
+     * @param player The player that just got paralyzed
+     */
+    'State.OnParalyzed': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player stops being paralyzed
+     * @param player The player that just stopped being paralyzed
+     */
+    'State.OnUnparalyzed': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player starts using a zipline
+     * @param player The player that just started using a zipline
+     */
+    'State.OnZiplineStart': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player stops using a zipline
+     * @param player The player that just stopped using a zipline
+     */
+    'State.OnZiplineEnd': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player starts a "Use" action
+     * @param player The player that just started the action
+     */
+    'State.OnBeginUsing': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player stops a "Use" action
+     * @param player The player that just stopped the action
+     */
+    'State.OnEndUsing': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when the movement of this player is locked (example: Standing in the escape pod)
+     * @param player The player whose movement just got locked
+     */
+    'State.OnMovementLocked': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when the movement of this player is unlocked (example: At the start of the mission)
+     * @param player The player whose movement just got unlocked
+     */
+    'State.OnMovementUnlocked': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player gets grabbed
+     * @param player The player that just got grabbed
+     */
+    'State.OnGrabbed': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player gets released after being grabbed
+     * @param player The player that just got released
+     */
+    'State.OnReleased': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player starts flying
+     * @param player The player that just started flying
+     */
+    'State.OnBeginFlying': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player stops flying
+     * @param player The player that just stopped flying
+     */
+    'State.OnEndFlying': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player gets frozen
+     * @param player The player that just got frozen
+     */
+    'State.OnFrozen': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player gets unfrozen
+     * @param player The player that just got unfrozen
+     */
+    'State.OnUnfrozen': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player passes out from drinking too much beer
+     * @param player The player that just passed out
+     */
+    'State.OnPassedOut': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player sobers up after having passed out
+     * @param player The player that just sobered up
+     */
+    'State.OnSoberedUp': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player starts piloting another object (example: Cave Angel)
+     * @param player The player that just started piloting another object
+     */
+    'State.OnStartedPiloting': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player stops piloting another object
+     * @param player The player that just stopped piloting another object
+     */
+    'State.OnStoppedPiloting': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player becomes infected with Rockpox
+     * @param player The player that just got infected
+     */
+    'State.OnInfected': (player: DRGGSIPlayer) => void;
+    /**
+     * Emitted when this player breaks out of a Rockpox infection
+     * @param player The player that just stopped being infected
+     */
+    'State.OnCured': (player: DRGGSIPlayer) => void;
     /**
      * Emitted when the players health changes.
      * @param player The player whose health just changed.
